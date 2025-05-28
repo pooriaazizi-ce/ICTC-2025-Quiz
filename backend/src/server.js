@@ -14,7 +14,6 @@ const TOTAL_VALUES = TOTAL_USERS * TOTAL_EXAMS * TOTAL_LESSONS; // 5,000,000
 const BUFFER_LENGTH = Math.ceil(TOTAL_VALUES / 4); // هر 4 مقدار = 1 بایت
 const DATA_FILE = 'data.bin';
 
-// بافر اصلی داده‌ها
 let buffer;
 if (fs.existsSync(DATA_FILE)) {
   buffer = fs.readFileSync(DATA_FILE);
@@ -23,7 +22,6 @@ if (fs.existsSync(DATA_FILE)) {
   fs.writeFileSync(DATA_FILE, buffer);
 }
 
-// تبدیل آدرس داده به اندیس کلی
 function index(userId, examId, lessonId) {
   return ((userId - 1) * TOTAL_EXAMS * TOTAL_LESSONS) + ((examId - 1) * TOTAL_LESSONS) + (lessonId - 1);
 }
@@ -37,7 +35,6 @@ function setValue(userId, examId, lessonId, value) {
   buffer[byteIdx] |= (value & 0b11) << bitOffset; // مقدار جدید
 }
 
-// خواندن مقدار
 function getValue(userId, examId, lessonId) {
   const idx = index(userId, examId, lessonId);
   const byteIdx = Math.floor(idx / 4);
@@ -50,7 +47,6 @@ function saveBuffer() {
   fs.writeFileSync(DATA_FILE, buffer);
 }
 
-// API: درج مقدار
 app.post('/api/set', (req, res) => {
   const { userId, examId, lessonId, value } = req.body;
   if (
@@ -67,7 +63,6 @@ app.post('/api/set', (req, res) => {
   res.json({ success: true });
 });
 
-// API: خواندن مقدار
 app.get('/api/get', (req, res) => {
   const { userId, examId, lessonId } = req.query;
   if (
@@ -83,7 +78,7 @@ app.get('/api/get', (req, res) => {
 
 app.post('/api/randomize', (req, res) => {
   for (let idx = 0; idx < TOTAL_VALUES; idx++) {
-    const val = Math.floor(Math.random() * 4); // بین ۰ تا ۳
+    const val = Math.floor(Math.random() * 4);
     const byteIdx = Math.floor(idx / 4);
     const bitOffset = (idx % 4) * 2;
     buffer[byteIdx] &= ~(0b11 << bitOffset);
