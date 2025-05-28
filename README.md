@@ -1,6 +1,17 @@
 # Azmoon
 
+## Getting started
 
+To run the project:
+```
+cd ./backend/
+yarn dev
+```
+```
+cd ./frontend/
+yarn start
+```
+and enjoy ViP codings
 
 ## Getting started
 
