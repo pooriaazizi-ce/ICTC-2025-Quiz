@@ -1,104 +1,163 @@
 # Azmoon
 
-## Getting started
+Implementation of an ICT Challenge question from Sharif ICTC:
+`https://sharifict.com/ictchallenge/`
 
-To run the project:
-```
-cd ./backend/
+This project stores and queries compact exam-result data for a large number of participants. It includes:
+
+- a Node.js/Express backend for storing and reading results
+- a React frontend for manual data entry and leaderboard display
+- a binary storage approach that packs each answer into `2` bits
+
+## Challenge Summary
+
+Based on the challenge statement, the system models:
+
+- `100000` participants
+- `10` exams per participant
+- `5` lessons per exam
+- `4` possible states per lesson result
+
+The four states are encoded as colors / levels:
+
+- `0`: red
+- `1`: yellow
+- `2`: green
+- `3`: blue
+
+That means each participant has `50` stored values, and the whole dataset contains:
+
+- `100000 × 10 × 5 = 5000000` values
+
+Because each value has only `4` possible states, the backend stores each one in `2` bits, so the full dataset fits in about:
+
+- `5000000 × 2 bits = 10000000 bits`
+- `1250000 bytes`
+- about `1.25 MB`
+
+## Project Structure
+
+- `backend/` Express API and binary storage logic
+- `backend/src/server.js` main backend implementation
+- `backend/data.bin` persisted binary dataset
+- `frontend/` React client
+- `frontend/src/utils/adding_form.js` manual value entry + random data generation
+- `frontend/src/utils/show_top.js` top users for one lesson in one exam
+- `frontend/src/utils/overal_top.js` top users across all exams
+- `question.jpg` screenshot of the original challenge statement
+
+## How It Works
+
+The backend maps each `(userId, examId, lessonId)` triple to a linear index and stores its value in a packed byte buffer.
+
+Implementation details in `backend/src/server.js`:
+
+- total values: `5,000,000`
+- each byte stores `4` values
+- storage buffer size: `Math.ceil(5000000 / 4) = 1250000` bytes
+- values are persisted in `data.bin`
+
+The core storage flow is:
+
+- compute a flat index for a participant/exam/lesson
+- locate the target byte with `Math.floor(index / 4)`
+- locate the `2`-bit offset with `(index % 4) * 2`
+- clear the previous bits
+- write the new value
+
+## Available API Endpoints
+
+The backend exposes these routes:
+
+- `POST /api/set`  
+  Stores one result for a participant, exam, and lesson.
+
+- `GET /api/get`  
+  Returns one stored value.
+
+- `POST /api/randomize`  
+  Fills the whole dataset with random values from `0` to `3`.
+
+- `GET /api/top`  
+  Returns the first `N` participants whose value is `3` for a given exam and lesson.
+
+- `GET /api/top-weighted`  
+  Returns the top `N` participants in one exam using weighted lesson scores.
+
+- `GET /api/mean`  
+  Returns the mean value and normalized percentage for one lesson in one exam.
+
+- `GET /api/top-overall`  
+  Returns the top `N` participants across all exams using weighted lesson scores.
+
+## Frontend Features
+
+The React app currently provides:
+
+- manual submission of a result by participant, exam, lesson, and color
+- full random dataset generation
+- leaderboard for one lesson in one exam
+- overall leaderboard across all exams
+
+The UI text is in Persian and matches the challenge domain.
+
+## Run the Project
+
+## Prerequisites
+
+- Node.js
+- Yarn
+
+## Backend
+
+```bash
+cd backend
+yarn install
 yarn dev
 ```
-```
-cd ./frontend/
+
+Backend runs on:
+
+- `http://localhost:5000`
+
+## Frontend
+
+```bash
+cd frontend
+yarn install
 yarn start
 ```
-and enjoy ViP codings
 
-## Getting started
+Frontend runs on:
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+- `http://localhost:3000`
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+## Notes
 
-## Add your files
+- The project already contains `node_modules` in both `backend/` and `frontend/`.
+- The backend uses synchronous file operations for persistence.
+- `GET /api/top` returns the first matching users with value `3`; it does not sort by any extra score.
+- `GET /api/top-overall` and `GET /api/top-weighted` sort users by weighted sum where lesson weight equals lesson number.
+- The frontend calls the backend with hardcoded URLs pointing to `http://localhost:5000`.
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+## Current Implementation Scope
 
-```
-cd existing_repo
-git remote add origin https://git.sharifict.ir/ictchallenge-2025/azmoon.git
-git branch -M main
-git push -uf origin main
-```
+This repository is a working prototype for the ICTC challenge problem. It demonstrates:
 
-## Integrate with your tools
+- compact storage under the memory constraint
+- random initialization
+- update and retrieval of per-lesson results
+- simple leaderboard and aggregate queries
 
-- [ ] [Set up project integrations](https://git.sharifict.ir/ictchallenge-2025/azmoon/-/settings/integrations)
+It does not currently include:
 
-## Collaborate with your team
+- participant names or profiles
+- advanced validation or authentication
+- optimized ranking structures for faster repeated top-N queries
+- automated tests
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+## Related Challenge Reference
 
-## Test and Deploy
+Challenge website:
 
-Use the built-in continuous integration in GitLab.
-
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
-
-***
-
-# Editing this README
-
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
-
-## Suggestions for a good README
-
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
-
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+- `https://sharifict.com/ictchallenge/`
